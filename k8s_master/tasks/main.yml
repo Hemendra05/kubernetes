@@ -1,0 +1,145 @@
+---
+# tasks file for k8s_master
+
+
+- name: "Repository for Docker"
+  yum_repository:
+          name: "docker"
+          description: "Docker Repo"
+          baseurl: "https://download.docker.com/linux/centos/7/x86_64/stable"
+          gpgcheck: no
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS" or  ansible_facts['distribution'] == "Fedora"
+
+- name: "Adding the GPG key for the official Docker Repository"
+  shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -"
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: Add specified repository into sources list using specified filename
+  apt_repository:
+          repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+          state: present
+          filename: docker
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Installing containerd.io"
+  package:
+          name: "https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.4.3-3.1.el7.x86_64.rpm"
+          state: present
+          disable_gpg_check: True
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"   or  ansible_facts['distribution'] == "Fedora"
+
+- name: "Installing docker"
+  package:
+          name: "docker-ce"
+          state: present
+  when: ansible_facts['distribution'] != "Amazon"
+
+- name: "Installing docker"
+  package:
+          name: "docker"
+          state: present
+  when: ansible_facts['distribution'] == "Amazon"
+
+- name: "Starting Docker Service"
+  service:
+          name: "docker"
+          state: started
+          enabled: yes
+
+- name: "Configure Docker Driver as systemd"
+  template:
+          dest: "/etc/docker/daemon.json"
+          src: "daemon.json"
+
+- name: "Restarting Docker Service"
+  service:
+          name: "docker"
+          state: restarted
+          enabled: yes
+
+- name: "Configure Repository For Kubernetes"
+  yum_repository:
+          name: "kubernetes"
+          description: "Kubernetes"
+          baseurl: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
+          gpgcheck: no
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or   ansible_facts['distribution'] == "Fedora"  or  ansible_facts['distribution'] == "Amazon"
+
+- name: "Adding the GPG key for the Kubernetes Repository"
+  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add"
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Configure apt-repo for Kubernetes"
+  apt_repository:
+          repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+          state: present
+          filename: kubernetes
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Installing All Required Packages for K8S Cluster"
+  package:
+          name: "{{ item }}"
+          state: present
+  loop:
+          - kubeadm
+          - kubelet
+          - kubectl
+          - iproute-tc
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or  ansible_facts['distribution'] == "Fedora"  or   ansible_facts['distribution'] == "Amazon"
+
+- name: "Installing All Required Packages for K8S Cluster"
+  package:
+          name: "{{ item }}"
+          state: present
+  loop:
+          - kubeadm
+          - kubelet
+          - kubectl
+          - iproute2
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Starting and Enabling kubelet Service"
+  service:
+          name: "kubelet"
+          state: started
+          enabled: yes
+
+- name: "Pulling Required Docker Images"
+  shell: "kubeadm config images pull"
+
+- name: "Configuring The Network"
+  template:
+          dest: "/etc/sysctl.d/k8s.conf"
+          src: k8s.conf
+
+- name: "Starting sysctl service"
+  shell: "sysctl --system"
+
+- name: "Check If kubeadm Has Already Run or Not"
+  stat:
+          path: "/etc/kubernetes/pki/ca.key"
+  register: "kubeadm_check"
+  ignore_errors: yes
+
+- name: "Initializing kubeadm and ignoring RAM and CPU errors"
+  shell: "kubeadm init --pod-network-cidr={{ pod_network_cidr }} --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem"
+  when: not kubeadm_check.stat.exists
+  run_once: yes
+
+- name: "Create Kubernetes config directory"
+  file:
+           path: ".kube/"
+           state: directory
+
+- name: "Copy admin.conf to Home directory and changing the Ownership"
+  copy:
+          dest: ".kube/config"
+          src: "/etc/kubernetes/admin.conf"
+          owner: "{{ ansible_user | default(ansible_user_id) }}"
+          group: "{{ ansible_user | default(ansible_user_id) }}"
+          mode: 0755
+          remote_src: true
+
+- name: "Debug Ansible facts"
+  debug:
+          var: ansible_facts['distribution']
