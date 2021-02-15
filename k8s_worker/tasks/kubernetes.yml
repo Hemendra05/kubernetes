@@ -1,0 +1,52 @@
+---
+
+- name: "Configure Repository For Kubernetes for[Redhat/CentOS/Fedora]"
+  yum_repository:
+          name: "kubernetes"
+          description: "Kubernetes"
+          baseurl: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
+          gpgcheck: no
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or   ansible_facts['distribution'] == "Fedora"  or  ansible_facts['distribution'] == "Amazon"
+
+
+- name: "Adding the GPG key for the Kubernetes Repository for [Debian/Ubuntu]"
+  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add"
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Configure apt-repo for Kubernetes for [Debian/Ubuntu]"
+  apt_repository:
+           repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+           state: present
+           filename: kubernetes
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+
+- name: "Installing All Required Packages for K8S Cluster in [Redhat/CentOS/Fedora]"
+  package:
+           name: "{{ item }}"
+           state: present
+  loop:
+          - kubeadm
+          - kubelet
+          - kubectl
+          - iproute-tc
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or  ansible_facts['distribution'] == "Fedora"  or   ansible_facts['distribution'] == "Amazon"
+
+
+- name: "Installing All Required Packages for K8S Cluster in [Debian/Ubuntu]"
+  package:
+           name: "{{ item }}"
+           state: present
+  loop:
+           - kubeadm
+           - kubelet
+           - kubectl
+           - iproute2
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+
+- name: "Starting and Enabling kubelet Service"
+  service:
+           name: "kubelet"
+           state: started
+           enabled: yes
