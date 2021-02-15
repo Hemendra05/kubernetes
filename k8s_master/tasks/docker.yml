@@ -1,0 +1,58 @@
+---
+
+- name: "Repository for Docker for [RedHat/CentOS/Fedora]"
+  yum_repository:
+          name: "docker"
+          description: "Docker Repo"
+          baseurl: "https://download.docker.com/linux/centos/7/x86_64/stable"
+          gpgcheck: no
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS" or  ansible_facts['distribution'] == "Fedora"
+
+
+- name: "Adding the GPG key for the official Docker Repository for [Debian/Ubuntu]"
+  shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -"
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+- name: "Add specified repository into sources list using specified filename for [Debian/Ubuntu]"
+  apt_repository:
+          repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+          state: present
+          filename: docker
+  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+
+
+- name: "Installing containerd.io in [RedHat/CentOS/Fedora]"
+  package:
+          name: "https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.4.3-3.1.el7.x86_64.rpm"
+          state: present
+          disable_gpg_check: True
+  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"   or  ansible_facts['distribution'] == "Fedora"
+
+- name: "Installing docker"
+  package:
+          name: "docker-ce"
+          state: present
+  when: ansible_facts['distribution'] != "Amazon"
+
+- name: "Installing docker in Amazon linux"
+  package:
+          name: "docker"
+          state: present
+  when: ansible_facts['distribution'] == "Amazon"
+
+- name: "Starting Docker Service"
+  service:
+          name: "docker"
+          state: started
+          enabled: yes
+
+- name: "Configure Docker Driver as systemd"
+  template:
+          dest: "/etc/docker/daemon.json"
+          src: "daemon.json"
+
+- name: "Restarting Docker Sevice"
+  service:
+          name: "docker"
+          state: restarted
+          enabled: yes
