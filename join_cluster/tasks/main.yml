@@ -1,0 +1,15 @@
+- name: printing join command
+  command: "kubeadm token create --print-join-command"
+  register: x
+  when: inventory_hostname in groups['master']
+- stat:
+        path: "/etc/kubernetes/pki/ca.crt"      
+  register: check
+  when: inventory_hostname in groups['worker']  
+- name: joining the worker node
+  command: "{{ hostvars[item]['x']['stdout'] }}"
+  with_items: "{{ groups['master'] }}"
+  when:
+          - inventory_hostname in groups['worker']
+          - not check.stat.exists
+  run_once: yes           
