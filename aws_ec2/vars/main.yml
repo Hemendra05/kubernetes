@@ -1,0 +1,13 @@
+---
+# vars file for aws_ec2
+
+
+key_name: "hemendra_key"
+instance_type: "t2.micro"
+ami_image: "ami-08e0ca9924195beba"
+subnet_id: "subnet-940f06fc"
+public_ip: "yes"
+region: "ap-south-1"
+security_grp_id: "sg-0239816179970dfe7"
+access_key: ""
+secret_key: ""

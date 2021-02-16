@@ -1,0 +1,43 @@
+---
+# tasks file for aws_ec2
+
+- name: "start an instance for K8S Master with a public IP address"
+  amazon.aws.ec2:
+            key_name: "{{ key_name }}"
+            instance_type: "{{ instance_type }}"
+            image: "{{ ami_image }}"
+            wait: yes
+            instance_tags:
+                    Country: IN
+                    Env: dev
+                    Auther: hemendra
+                    Name: Kube-Master
+            count: 1
+            vpc_subnet_id: "{{ subnet_id }}"
+            assign_public_ip: "{{ public_ip }}"
+            region: "{{ region }}"
+            group_id: "{{ security_grp_id }}"
+            aws_access_key: "{{ access_key }}"
+            aws_secret_key: "{{ secret_key }}"
+
+- name: "Start an instance for K8S Worker with public IP address"
+  amazon.aws.ec2:
+          key_name: "{{ key_name }}"
+          instance_type: "{{ instance_type }}"
+          image: "{{ ami_image }}"
+          wait: yes
+          instance_tags:
+                  Country: IN
+                  Env: dev
+                  Auther: hemendra
+                  Name: Kube-Worker
+          count: 2
+          vpc_subnet_id: "{{ subnet_id }}"
+          assign_public_ip: "{{ public_ip }}"
+          region: "{{ region }}"
+          group_id: "{{ security_grp_id }}"
+          aws_access_key: "{{ access_key }}"
+          aws_secret_key: "{{ secret_key }}"
+                   
+
+            
