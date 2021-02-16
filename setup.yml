@@ -1,0 +1,8 @@
+- hosts: all
+  roles:
+
+          - role: k8s_master
+            when: inventory_hostname in groups['master']
+          - role: k8s_worker
+            when: inventory_hostname in groups['worker']
+          - role: join_cluster
