@@ -1,27 +1,42 @@
 ---
 
-- name: "Configure Repository For Kubernetes for[Redhat/CentOS/Fedora]"
+- name: "Configure Repository For Kubernetes for[Redhat Family]"
   yum_repository:
           name: "kubernetes"
           description: "Kubernetes"
           baseurl: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
-          gpgcheck: no
-  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or   ansible_facts['distribution'] == "Fedora"  or  ansible_facts['distribution'] == "Amazon"
+          gpgcheck: yes
+          repo_gpgcheck: yes
+          gpgkey:
+                  - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                  - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: "Ensure Dependencies are Installed in [Debian Family]"
+  apt:
+          name:
+                  - apt-transport-https
+                  - ca-certificates
+          state: present
+  when: ansible_facts['os_family'] == "Debian"
 
 
-- name: "Adding the GPG key for the Kubernetes Repository for [Debian/Ubuntu]"
-  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add"
-  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+- name: "Adding the GPG key for the Kubernetes Repository for [Debian Family]"
+  apt_key:
+          url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+          state: present
+  when: ansible_facts['os_family'] == "Debian"
 
-- name: "Configure apt-repo for Kubernetes for [Debian/Ubuntu]"
+- name: "Configure apt-repo for Kubernetes for [Debian Family]"
   apt_repository:
            repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
            state: present
+           update_cache: true
            filename: kubernetes
-  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+  when: ansible_facts['os_family'] == "Debian"
 
 
-- name: "Installing All Required Packages for K8S Cluster in [Redhat/CentOS/Fedora]"
+- name: "Installing All Required Packages for K8S Cluster in [Redhat Family]"
   package:
            name: "{{ item }}"
            state: present
@@ -30,10 +45,10 @@
           - kubelet
           - kubectl
           - iproute-tc
-  when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution'] == "CentOS"  or  ansible_facts['distribution'] == "Fedora"  or   ansible_facts['distribution'] == "Amazon"
+  when: ansible_facts['os_family'] == "RedHat"
 
 
-- name: "Installing All Required Packages for K8S Cluster in [Debian/Ubuntu]"
+- name: "Installing All Required Packages for K8S Cluster in [Debian Family]"
   package:
            name: "{{ item }}"
            state: present
@@ -42,7 +57,7 @@
            - kubelet
            - kubectl
            - iproute2
-  when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
+  when: ansible_facts['os_family'] == "Debian"
 
 
 - name: "Starting and Enabling kubelet Service"

@@ -10,13 +10,16 @@
 
 
 - name: "Adding the GPG key for the Kubernetes Repository for [Debian/Ubuntu]"
-  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add"
+  apt_key:
+          url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+          state: present
   when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
 
 - name: "Configure apt-repo for Kubernetes for [Debian/Ubuntu]"
   apt_repository:
            repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
            state: present
+           update_cache: true
            filename: kubernetes
   when: ansible_facts['distribution'] == "Debian" or ansible_facts['distribution'] == "Ubuntu"
 
