@@ -30,7 +30,6 @@
 - name: "Initializing kubeadm and ignoring RAM and CPU errors"
   shell: "kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem"
   when: not kubeadm_check.stat.exists
-  run_once: yes
 
 - name: "Create Kubernetes config directory"
   file:
